@@ -33,7 +33,7 @@ torch::Tensor embedding = model->forward(tokenize("hello world"));
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](../LICENSE).
 
 This project is not affiliated with, endorsed by, or sponsored by any model
 provider. Architecture names are used only to identify which models these
