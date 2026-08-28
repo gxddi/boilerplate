@@ -1,1 +1,2 @@
-# Low Level System for a Website
+# Low Level Website Boilerplate
+compile and run server.cpp

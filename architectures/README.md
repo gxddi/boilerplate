@@ -1,4 +1,4 @@
-# Torch Model Architectures
+# Model Architectures in Torch
 
 Readable C++ implementations of common model architectures, built as native Torch module's.
 Supports loading models from HuggingFace model directory and safetensors.
