@@ -17,6 +17,9 @@
 #include "server_tools/http2_header.hpp" // TBA...
 #include "server_tools/server_tools.hpp" // Internal functions, REL_PATH_FROM_BUILD
 
+#define SOURCE_PATH ""
+#define SITE_DIR "site/" // with trailing slash
+
 int main() {
   // TLS Encryption cert and key
   SSL_CTX *ssl_ctx = SSL_CTX_new(TLS_server_method());
@@ -24,10 +27,10 @@ int main() {
     std::cout << "Error when creating SSL server context\n";
     return 1;
   }
-  if (SSL_CTX_use_certificate_file(ssl_ctx, SERVER_PATH "creds/localhost+2.pem",
+  if (SSL_CTX_use_certificate_file(ssl_ctx, SOURCE_PATH "creds/localhost+2.pem",
                                    SSL_FILETYPE_PEM) <= 0 ||
       SSL_CTX_use_PrivateKey_file(ssl_ctx,
-                                  SERVER_PATH "creds/localhost+2-key.pem",
+                                  SOURCE_PATH "creds/localhost+2-key.pem",
                                   SSL_FILETYPE_PEM) <= 0 ||
       SSL_CTX_check_private_key(ssl_ctx) != 1) {
     std::cout << "Error when assigning certs and keys to SSL context\n";
@@ -62,6 +65,8 @@ int main() {
   if (listen(listen_sfd, 10) == -1) {
     std::cout << "Bind failed with error: " << errno << "\n";
   }
+
+  std::cout << "server running at localhost:" << port << "\n";
 
   // Server loop
   while (true) {
@@ -106,33 +111,29 @@ int main() {
     // Parse HTTPS request header
     HTTP1Header request_header(buffer, static_cast<std::size_t>(read_len));
     if (request_header.fail) {
+      server_send_file(SOURCE_PATH SITE_DIR, "404.html", conn_ssl);
       server_close_conn(conn_ssl, conn_sfd);
       continue;
     }
     std::cout << "Request: " << request_header.keyword << " "
               << request_header.endpoint << "\n"; // Print request
 
-    std::string body; // Response body, and the request body on a POST
+    std::size_t query =
+        request_header.endpoint.find('?'); // ...le.com/about?key=value
+                                           //                ^
+    std::string_view path = request_header.endpoint.substr(0, query);
+    std::string_view keys = query == std::string::npos
+                                ? std::string_view()
+                                : request_header.endpoint.substr(query + 1);
 
-    // The endpoint as routed, and whatever followed the '?'
-    std::size_t mark = request_header.endpoint.find('?');
-    std::string_view path = request_header.endpoint.substr(0, mark);
-    std::string_view query = mark == std::string::npos
-                                 ? std::string_view()
-                                 : request_header.endpoint.substr(mark + 1);
-
-    // **********************************HERE**********************************
-    // Request Handing
-    if (path.starts_with("/api.../")) { // API
-
-      // HERE
-
-    } else if (request_header.keyword == "GET") { // STATIC
-      server_send_file(request_header.endpoint, conn_ssl);
-    } else { // Static files are read only
-
-      body.clear();
-      server_send_response("405 Method Not Allowed", "text/plain", body,
+    /****************************Request Handling****************************/
+    /* if (path.starts_with("api.../")) { // API
+      // API
+    } else */
+    if (request_header.keyword == "GET") { // GET a file in site dir
+      server_send_file(SOURCE_PATH SITE_DIR, request_header.endpoint, conn_ssl);
+    } else { // Malformed request
+      server_send_response("405 Method Not Allowed", "text/plain", "",
                            conn_ssl);
     }
 

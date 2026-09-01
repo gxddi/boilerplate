@@ -63,8 +63,10 @@ struct HTTP1Header {
     return {};
   }
 
-  // Constructor from raw HTTP text, parsing n char's (instead of std::string to
-  // avoid pointless deep copy)
+  /*
+   * Constructor from raw HTTP text, parsing n char's (instead of std::string to
+   * avoid pointless deep copy)
+   */
   inline HTTP1Header(const char *raw, std::size_t n) {
 
     std::string_view raw_view(raw, n);
@@ -91,7 +93,8 @@ struct HTTP1Header {
       std::cerr << "Invalid HTTP header. Couldn't parse endpoint.\n";
       return;
     }
-    endpoint = request_line.substr(kw_end + 1, ep_end - (kw_end + 1));
+    endpoint = request_line.substr(kw_end + 2,
+                                   ep_end - (kw_end + 2)); // skip leading slash
 
     version = request_line.substr(ep_end + 1);
     connection = field(raw, "Connection");
